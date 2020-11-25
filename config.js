@@ -1,7 +1,7 @@
 module.exports = {
   personium: {
     CELL_NAME: 'app-ishiguro-01',
-    CELL_FQDN: 'https://app-ishiguro-01.appdev.personium.io/',
+    CELL_FQDN: 'app-ishiguro-01.appdev.personium.io',
     CELL_ADMIN: process.env.PERSONIUM_USER,
     CELL_ADMIN_PASS: process.env.PERSONIUM_PASS,
     DIRECTORY_MAPPING: [
