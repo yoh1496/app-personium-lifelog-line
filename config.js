@@ -23,6 +23,38 @@ module.exports = {
       },
       {
         filePattern: [
+          'src/app/engine/debugging/*',
+          '!src/app/engine/debugging/*.example.*',
+        ],
+        srcDir: 'src/app/engine/debugging',
+        dstDir: 'debugging',
+        resourceType: 'service',
+        meta: {
+          language: 'JavaScript',
+          subject: 'botUser',
+          endPoints: {
+            getEventListenerToken: 'getEventListenerToken.js',
+          },
+        },
+      },
+      {
+        filePattern: [
+          'src/app/engine/line/*',
+          '!src/app/engine/line/*.example.*',
+        ],
+        srcDir: 'src/app/engine/line',
+        dstDir: 'line',
+        resourceType: 'service',
+        meta: {
+          language: 'JavaScript',
+          subject: 'botUser',
+          endPoints: {
+            events: 'events.js',
+          },
+        },
+      },
+      {
+        filePattern: [
           'src/app/public',
           'src/app/public/**/*',
           '!src/app/public/**/*.example.*',

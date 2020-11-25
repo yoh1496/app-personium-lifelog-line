@@ -64,3 +64,5 @@ dist
 build
 
 !.gitkeep
+
+src/app/engine/line/line_secret.js
