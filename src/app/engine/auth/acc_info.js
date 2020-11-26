@@ -2,8 +2,9 @@ exports.accInfo = (function() {
   /*
    * Begin of your Personium app configurations
    */
-  var rootUrl = 'https://app-ishiguro-01.appdev.personium.io';
-  var appCellName = 'app-ishiguro-01';
+  var appCellUrl = 'https://app-ishiguro-01.appdev.personium.io/'; // for example: https://stg-demo.personium.io/appCellName/ or https://appCellName.stg-demo.personium.io/
+  var appUserId = '***';
+  var appUserPass = '***';
   /*
    * End of your Personium app configurations
    */
@@ -12,10 +13,11 @@ exports.accInfo = (function() {
    * Don't modify anything from here on
    */
   var accInfo = {};
-  var appCellUrl = [rootUrl, ''].join('/'); // always with ending slash
   accInfo.APP_CELL_URL = appCellUrl;
   accInfo.APP_CELL_ADMIN_INFO = {
-    cellUrl: appCellName,
+    cellUrl: appCellUrl,
+    userId: appUserId,
+    password: appUserPass,
   };
 
   return accInfo;

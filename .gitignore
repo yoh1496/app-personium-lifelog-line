@@ -66,3 +66,5 @@ build
 !.gitkeep
 
 src/app/engine/line/line_secret.js
+src/app/lineapp/main/AppConstants.js
+src/app/lineapp/setup/AppConstants.js

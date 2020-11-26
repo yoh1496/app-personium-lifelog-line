@@ -19,7 +19,7 @@ function launch(request) {
         '<body style="margin: 0px" >',
         '<noscript>You need to enable JavaScript to run this app.</noscript>',
         '<div id="root"></div>',
-        '<script type="text/javascript" src="/__/public/main.bundle.js">',
+        '<script type="text/javascript" src="/__/public/lineapp.bundle.js">',
         '</script>',
         '</body>',
         '</html>',

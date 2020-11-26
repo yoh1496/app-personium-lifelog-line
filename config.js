@@ -18,6 +18,8 @@ module.exports = {
           subject: 'tokenAcc',
           endPoints: {
             app: 'launchSPA.js',
+            lineapp: 'launchLINEApp.js',
+            linesetup: 'launchLINESetup.js',
           },
         },
       },
@@ -50,6 +52,23 @@ module.exports = {
           subject: 'botUser',
           endPoints: {
             events: 'events.js',
+            request_oauth2_url: 'request_oauth2_url.js',
+            register_line_association: 'register_line_association.js',
+          },
+        },
+      },
+      {
+        filePattern: ['src/app/engine/auth/*'],
+        srcDir: 'src/app/engine/auth',
+        dstDir: 'auth',
+        resourceType: 'service',
+        meta: {
+          language: 'JavaScript',
+          subject: 'tokenAcc',
+          endPoints: {
+            start_oauth2: 'start_oauth2.js',
+            receive_redirect: 'receive_redirect.js',
+            refreshProtectedBoxAccessToken: 'refreshProtectedBoxAccessToken.js',
           },
         },
       },
