@@ -7,12 +7,16 @@ import { LIFF_ID, APP_CELL_URL } from './AppConstants';
 import { useLiffInitialize } from '../lib/useLiffInitialize';
 
 function App() {
-  const { loading, error } = useLiffInitialize(LIFF_ID);
+  const { loading, error, startInit } = useLiffInitialize(LIFF_ID);
   const handleClick = useCallback(() => {
     liff.login({
       redirectUri: `${APP_CELL_URL}__/front/lineapp`,
     });
   }, []);
+
+  useEffect(() => {
+    startInit();
+  }, [startInit]);
 
   if (loading) return <h1>Initializing...</h1>;
 

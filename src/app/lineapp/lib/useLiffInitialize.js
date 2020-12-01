@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import liff from '@line/liff';
 
 export function useLiffInitialize(liffId) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const startInit = useCallback(() => {
+    return liff.init({ liffId });
+  }, [liffId]);
+
   useEffect(() => {
-    liff
-      .init({ liffId })
+    console.log(liff.ready);
+    liff.ready
       .then(() => {
         setLoading(false);
       })
@@ -17,5 +21,5 @@ export function useLiffInitialize(liffId) {
       });
   });
 
-  return { loading, error };
+  return { loading, error, startInit };
 }

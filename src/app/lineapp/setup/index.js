@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import liff from '@line/liff';
 import { useLiffInitialize } from '../lib/useLiffInitialize';
@@ -38,12 +38,16 @@ window.history.replaceState(
 );
 
 function App() {
-  const { loading, error } = useLiffInitialize(LIFF_ID);
+  const { loading, error, startInit } = useLiffInitialize(LIFF_ID);
   const handleClick = useCallback(() => {
     liff.login({
       redirectUri: `${APP_CELL_URL}__/front/linesetup`,
     });
   }, []);
+
+  useEffect(() => {
+    startInit();
+  }, [startInit]);
 
   if (loading) return <h1>Initializing...{queryParams}</h1>;
 
