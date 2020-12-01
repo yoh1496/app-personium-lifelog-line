@@ -12,18 +12,23 @@ export function useLINECellAssociationStatus(lineAccessToken, appCellUrl) {
       body.set('cellUrl', cellUrl);
       body.set('accessToken', accessToken);
 
-      const res = await fetch(
-        `${appCellUrl}__/line/register_line_association`,
-        {
-          method: 'POST',
-          body: body.toString(),
-        }
-      );
+      try {
+        const res = await fetch(
+          `${appCellUrl}__/line/register_line_association`,
+          {
+            method: 'POST',
+            body: body.toString(),
+          }
+        );
 
-      if (res.ok) {
-        return true;
-      } else {
-        throw { status: res.status, statusText: res.statusText };
+        if (res.ok) {
+          return true;
+        } else {
+          throw { status: res.status, statusText: res.statusText };
+        }
+      } catch (e) {
+        setError(e);
+        throw e;
       }
     },
     [lineAccessToken, appCellUrl]

@@ -6,8 +6,64 @@
                 <resourcetype>
                     <collection/>
                 </resourcetype>
+                <acl xmlns:p="urn:x-personium:xmlns"/>
             </prop>
             <status>HTTP/1.1 200 OK</status>
+        </propstat>
+    </response>
+    <response>
+        <href>personium-localbox:/data</href>
+        <propstat>
+            <prop>
+                <resourcetype>
+                    <collection/>
+                </resourcetype>
+                <acl  xml:base="https://app-ishiguro-01.appdev.personium.io/__role/__/" xmlns:p="urn:x-personium:xmlns">
+                    <ace>
+                        <principal>
+                            <href>LineEventWriter</href>
+                        </principal>
+                        <grant>
+                            <privilege>
+                                <D:write xmlns:D="DAV:"/>
+                            </privilege>
+                        </grant>
+                    </ace>
+                </acl>
+            </prop>
+        </propstat>
+    </response>
+    <response>
+        <href>personium-localbox:/data/binary</href>
+        <propstat>
+            <prop>
+                <resourcetype>
+                    <collection/>
+                </resourcetype>
+            </prop>
+        </propstat>
+    </response>
+    <response>
+        <href>personium-localbox:/receivedData</href>
+        <propstat>
+            <prop>
+                <resourcetype>
+                    <collection/>
+                    <p:odata xmlns:p="urn:x-personium:xmlns"/>
+                </resourcetype>
+                <acl xml:base="https://app-ishiguro-01.appdev.personium.io/__role/__/" xmlns:p="urn:x-personium:xmlns">
+                    <ace>
+                        <principal>
+                            <href>LineEventWriter</href>
+                        </principal>
+                        <grant>
+                            <privilege>
+                                <D:write xmlns:D="DAV:"/>
+                            </privilege>
+                        </grant>
+                    </ace>
+                </acl>
+            </prop>
         </propstat>
     </response>
 </multistatus>

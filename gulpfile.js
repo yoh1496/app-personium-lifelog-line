@@ -17,7 +17,7 @@ const CONSTANT = {
 
 gulp.task('build_bar', () => {
   return gulp
-    .src(['src/bar/**/*', '!src/bar/**/*.example.*'])
+    .src(['src/bar/**/*', '!src/bar/**/*.example.*', '!src/bar/**/.gitignore'])
     .pipe(zip(`${config.personium.CELL_NAME}.bar`))
     .pipe(gulp.dest('dist'));
 });

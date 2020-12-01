@@ -10,11 +10,11 @@ function events(request) {
     const signature = request.headers['x-line-signature'];
 
     if (!debugEnabled) {
-      verifySignature(signature, reqBody, lineSecret.ChannelSecret);
+      verifySignature(signature, reqBody, LINE_CHANNEL_SECRET);
     }
 
     const jsonBody = JSON.parse(reqBody);
-    debugInfo = handleEvent(jsonBody);
+    debugInfo = handleEvent(jsonBody.events[0]);
   } catch (e) {
     console.log('error happened:' + JSON.stringify(e.message));
     return {
@@ -33,7 +33,7 @@ function events(request) {
 }
 
 function verifySignature(signature, reqBody, ChannelSecret) {
-  const SHA256 = new Hashes.SHA256();
+  const SHA256 = new Hashes.SHA256(); // eslint-disable-line
   const b64_hmac = SHA256.b64_hmac(ChannelSecret, reqBody);
   console.log('SHA256.b64_hmac encoded data: ' + b64_hmac);
   if (signature != b64_hmac) {
@@ -44,48 +44,196 @@ function verifySignature(signature, reqBody, ChannelSecret) {
   }
 }
 
+const NOT_IMPLEMENTED_ERROR = new Error('Not implemented yet');
+
+var getTableFromOtherCell = function(cell, box, odataName, tableName) {
+  return _p
+    .as('serviceSubject')
+    .cell(cell)
+    .box(box)
+    .odata(odataName)
+    .entitySet(tableName);
+};
+var getTable = function(tableName) {
+  return _p
+    .as('serviceSubject')
+    .cell()
+    .box()
+    .odata('LINEData')
+    .entitySet(tableName);
+};
+
+var getEntry = function(table, __id) {
+  return table.retrieve(__id);
+};
+
+var deleteEntry = function(table, __id) {
+  return table.del(__id);
+};
+
+var updateTableEntry = function(table, data) {
+  var obj;
+  try {
+    obj = getEntry(table, data.__id);
+    obj = table.merge(obj.__id, data, '*');
+    // get the final merged reply
+    obj = getEntry(table, data.__id);
+  } catch (e) {
+    // Create a new entry
+    obj = table.create(data);
+  }
+  return obj;
+};
+
+var downloadContent = function(messageId) {
+  const headers = {
+    Authorization: 'Bearer ' + LINE_BOT_ACCESS_TOKEN,
+  };
+  const result = httpClient.get(
+    'https://api-data.line.me/v2/bot/message/' + messageId + '/content',
+    headers,
+    true
+  );
+
+  return result;
+};
+
+var replyMessage = function(replyToken, messages) {
+  const headers = {
+    Authorization: 'Bearer ' + LINE_BOT_ACCESS_TOKEN,
+  };
+  const body = {
+    replyToken: replyToken,
+    messages: messages,
+  };
+  console.log(JSON.stringify(body));
+  const result = httpClient.post(
+    'https://api.line.me/v2/bot/message/reply',
+    headers,
+    'application/json',
+    JSON.stringify(body)
+  );
+  return result;
+};
+
+var createMessageObject = function(text) {
+  return {
+    type: 'text',
+    text: text,
+  };
+};
+
+var getUserBox = function(userCell, token) {
+  var url = userCell + '__box';
+  var headers = {
+    Accept: 'application/json',
+    Authorization: 'Bearer ' + token,
+  };
+  var boxRes = httpClient.get(url, headers);
+  if (boxRes.status == '403' || boxRes.status == '404') {
+    var err = [
+      'io.personium.client.DaoException: ' + boxRes.status,
+      JSON.stringify({
+        code: boxRes.status,
+        message: {
+          lang: 'en',
+          value: 'Necessary privilege is lacking.',
+        },
+      }),
+    ].join('');
+    throw new _p.PersoniumException(err);
+  }
+  console.log('getUserBox ' + userCell + ',' + token);
+  console.log(boxRes.body);
+  return JSON.parse(boxRes.body).Url;
+};
+
+function handleFollow(jsonBody) {
+  const { source, replyToken } = jsonBody;
+  if (source.type !== 'user') {
+    throw 'source.type is not supported: ' + source.type;
+  }
+  const result = replyMessage(replyToken, [
+    createMessageObject('友達登録ありがとうございます！'),
+    createMessageObject(
+      'アプリと連携すると、日々の入力をこのトークから行えるようになります。'
+    ),
+    createMessageObject(
+      'まずは、下のメニューから「Associate with your cell」を実行してください。'
+    ),
+  ]);
+  console.log(JSON.stringify(result));
+  return result;
+}
+
 function handleMessage(jsonBody) {
   // Handling Message event
-  // Example : {"type":"message","source":{"accountId":"wo.00001@works-00001"},"createdTime":1604653405421,"content":{"type":"text","text":"XXXX"}}
-  const accountId = jsonBody.source.accountId;
-  const accountEntitySet = getEntitySet('LWData', 'Accounts');
-  const accountData = findAccount(accountEntitySet, accountId).d.results[0];
-  let res = null;
-
-  if (!accountData) {
-    console.log('Account is not found');
-    res = postMessageToAccount(accountId, 'アカウントが見つかりませんでした。');
-    console.log(res);
-    return res;
+  const { message, source } = jsonBody;
+  if (source.type !== 'user') {
+    throw 'source.type is not supported: ' + source.type;
   }
 
-  console.log('Account is found: ' + JSON.stringify(accountData));
+  const { userId } = source;
+  console.log('handleMessage started');
 
-  if (accountData.status !== 'active') {
-    res = postMessageToAccount(
-      accountId,
-      'アカウントは有効になっていません。管理者にお問い合わせください。'
-    );
-    console.log(res);
-    return res;
+  const userDataTable = getTable('Accounts');
+  const userData = getEntry(userDataTable, userId);
+  if (!userData) {
+    throw 'no user found: ' + userId;
+  }
+  console.log(JSON.stringify(userData));
+
+  if (userData.status !== 'active') {
+    throw 'user is not active';
+  } else {
+    if (message.type === 'image') {
+      // handling image
+      const { contentProvider } = message;
+      if (contentProvider.type === 'line') {
+        // download image from line
+        const downloadResult = downloadContent(message.id);
+        console.log('-- Object.keys --');
+        console.log(JSON.stringify(Object.keys(downloadResult)));
+        const downloadResultHeaders = JSON.parse(downloadResult.headers);
+        console.log('-- downloadResultHeaders --');
+        console.log(JSON.stringify(downloadResultHeaders));
+        const targetCell = _p.as('serviceSubject').cell(userData.targetCell);
+        const targetBoxUrl = getUserBox(
+          userData.targetCell,
+          targetCell.getToken().access_token
+        );
+        console.log('targetBoxUrl: ' + JSON.stringify(targetBoxUrl));
+
+        const boxParts = targetBoxUrl.split('/').filter(i => i != '');
+        console.log(JSON.stringify(boxParts));
+
+        const boxName = boxParts[boxParts.length - 1];
+        const targetBox = targetCell.box(boxName);
+        targetBox.put(
+          'data/binary/' + message.id,
+          downloadResultHeaders['Content-Type'],
+          downloadResult.body
+        );
+
+        const diaryDataTable = getTableFromOtherCell(
+          userData.targetCell,
+          boxName,
+          'receivedData',
+          'receivedMessage'
+        );
+        updateTableEntry(diaryDataTable, {
+          __id: message.id,
+          datatype: 'image',
+        });
+      } else {
+        throw NOT_IMPLEMENTED_ERROR;
+      }
+    } else {
+      throw NOT_IMPLEMENTED_ERROR;
+    }
   }
 
-  // Account is found.
-  res = postMessageToAccount(
-    accountId,
-    'こんにちは ' + accountData.cellUrl + ' さん！'
-  );
-  console.log(res);
-
-  const randomStickerId = (
-    1988 +
-    (Math.floor(Math.random() * 10) % 10)
-  ).toString();
-  const packageId = '446';
-  res = postStickerToAccount(accountId, randomStickerId, packageId);
-  console.log(res);
-
-  return res;
+  return 'done';
 }
 
 function handleEvent(jsonBody) {
@@ -94,85 +242,19 @@ function handleEvent(jsonBody) {
 
   if (type === 'message') {
     return handleMessage(jsonBody);
+  } else if (type === 'follow') {
+    return handleFollow(jsonBody);
   } else {
     console.log('nothing is matched' + JSON.stringify(jsonBody));
   }
 }
 
-function getEntitySet(ODataName, entitySetName) {
-  return _p
-    .as('serviceSubject')
-    .cell()
-    .box()
-    .odata(ODataName)
-    .entitySet(entitySetName);
-}
-
-function findAccount(entitySet, accountId) {
-  try {
-    return entitySet
-      .query()
-      .filter("accountId eq '" + accountId + "'")
-      .run();
-  } catch (e) {
-    console.log(JSON.stringify(e));
-    if (e.code === 404) {
-      return null;
-    } else {
-      throw e;
-    }
-  }
-}
-
-function API_POST_MessagePush(body) {
-  const contentType = 'application/json';
-
-  const result = personium.httpPOSTMethod(
-    'https://apis.worksmobile.com/r/' +
-      lineSecret.APIID +
-      '/message/v1/bot/' +
-      lineSecret.botNo +
-      '/message/push',
-    {
-      Accept: 'application/json',
-      Authorization: 'Bearer ' + lineSecret.accessToken,
-      consumerKey: lineSecret.consumerKey,
-    },
-    contentType,
-    JSON.stringify(body),
-    200
-  );
-
-  return result;
-}
-
-function postMessageToAccount(accountId, message) {
-  const body = {
-    accountId: accountId,
-    content: {
-      type: 'text',
-      text: message,
-    },
-  };
-
-  return API_POST_MessagePush(body);
-}
-
-function postStickerToAccount(accountId, stickerId, packageId) {
-  const body = {
-    accountId: accountId,
-    content: {
-      type: 'sticker',
-      packageId: packageId,
-      stickerId: stickerId,
-    },
-  };
-
-  return API_POST_MessagePush(body);
-}
-
 var personium = require('personium').personium;
 var console = require('console').console;
 require('jshashes');
-const { lineSecret } = require('line_secret');
+var httpClient = new _p.extension.HttpClient();
+const {
+  LINE_BOT_ACCESS_TOKEN,
+  LINE_CHANNEL_SECRET,
+} = require('line_secret').lineSecret;
 const debugEnabled = false;

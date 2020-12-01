@@ -64,11 +64,11 @@ module.exports = {
         resourceType: 'service',
         meta: {
           language: 'JavaScript',
-          subject: 'tokenAcc',
+          subject: 'me',
           endPoints: {
             start_oauth2: 'start_oauth2.js',
             receive_redirect: 'receive_redirect.js',
-            refreshProtectedBoxAccessToken: 'refreshProtectedBoxAccessToken.js',
+            get_client_secret: 'get_client_secret.js',
           },
         },
       },
