@@ -186,7 +186,39 @@ function handleMessage(jsonBody) {
   if (userData.status !== 'active') {
     throw 'user is not active';
   } else {
-    if (message.type === 'image') {
+    // preparation for save
+    const targetCell = _p.as('serviceSubject').cell(userData.targetCell);
+    const targetBoxUrl = getUserBox(
+      userData.targetCell,
+      targetCell.getToken().access_token
+    );
+    console.log('targetBoxUrl: ' + JSON.stringify(targetBoxUrl));
+
+    const boxParts = targetBoxUrl.split('/').filter(i => i != '');
+    console.log(JSON.stringify(boxParts));
+
+    const boxName = boxParts[boxParts.length - 1];
+    const targetBox = targetCell.box(boxName);
+    const diaryDataTable = getTableFromOtherCell(
+      userData.targetCell,
+      boxName,
+      'receivedData',
+      'receivedMessage'
+    );
+
+    if (message.type === 'text') {
+      // handling text
+      const strDat = JSON.stringify({ text: message.text });
+      targetBox.put(
+        'data/binary/' + message.id,
+        'application/json; charset=utf-8',
+        strDat
+      );
+      updateTableEntry(diaryDataTable, {
+        __id: message.id,
+        datatype: 'text',
+      });
+    } else if (message.type === 'image') {
       // handling image
       const { contentProvider } = message;
       if (contentProvider.type === 'line') {
@@ -197,30 +229,13 @@ function handleMessage(jsonBody) {
         const downloadResultHeaders = JSON.parse(downloadResult.headers);
         console.log('-- downloadResultHeaders --');
         console.log(JSON.stringify(downloadResultHeaders));
-        const targetCell = _p.as('serviceSubject').cell(userData.targetCell);
-        const targetBoxUrl = getUserBox(
-          userData.targetCell,
-          targetCell.getToken().access_token
-        );
-        console.log('targetBoxUrl: ' + JSON.stringify(targetBoxUrl));
 
-        const boxParts = targetBoxUrl.split('/').filter(i => i != '');
-        console.log(JSON.stringify(boxParts));
-
-        const boxName = boxParts[boxParts.length - 1];
-        const targetBox = targetCell.box(boxName);
         targetBox.put(
           'data/binary/' + message.id,
           downloadResultHeaders['Content-Type'],
           downloadResult.body
         );
 
-        const diaryDataTable = getTableFromOtherCell(
-          userData.targetCell,
-          boxName,
-          'receivedData',
-          'receivedMessage'
-        );
         updateTableEntry(diaryDataTable, {
           __id: message.id,
           datatype: 'image',
