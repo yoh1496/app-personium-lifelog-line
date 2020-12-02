@@ -74,7 +74,7 @@ const App = ({ appCell, userCell, authCode }) => {
         // get AppAuthToken from receive_redirect
         const { state, code } = authCode;
         const res = await fetch(
-          `/__/auth/receive_redirect?state=${state}&code=${code}&cellUrl=${userCell}`,
+          `${appCell}__/auth/receive_redirect?state=${state}&code=${code}&cellUrl=${userCell}`,
           {
             method: 'GET',
             credentials: 'include',

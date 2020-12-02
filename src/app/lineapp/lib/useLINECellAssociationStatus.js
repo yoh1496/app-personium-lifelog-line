@@ -37,15 +37,10 @@ export function useLINECellAssociationStatus(lineAccessToken, appCellUrl) {
   const updateAssociationStatus = useCallback(async () => {
     setLoading(true);
 
-    const requestAuthUrl = new URL(
-      `${location.origin}/__/line/request_oauth2_url`
-    );
-    requestAuthUrl.searchParams.set('lineAccessToken', lineAccessToken);
+    const getCellURL = new URL(`${location.origin}/__/line/get_cellurl`);
+    getCellURL.searchParams.set('lineAccessToken', lineAccessToken);
 
-    const res = await fetch(requestAuthUrl, {
-      credentials: 'include',
-    });
-
+    const res = await fetch(getCellURL, { credentials: 'include' });
     console.log(res.headers);
 
     if (res.status === 404) {
@@ -55,7 +50,16 @@ export function useLINECellAssociationStatus(lineAccessToken, appCellUrl) {
     }
 
     // without error
-    const { url } = await res.json();
+    const { cellUrl } = await res.json();
+    const requestAuthURL = new URL(
+      `${location.origin}/__/auth/request_oauth2_url`
+    );
+    requestAuthURL.searchParams.set('cellUrl', cellUrl);
+
+    const requestAuthURLRes = await fetch(requestAuthURL, {
+      credentials: 'include',
+    });
+    const { url } = await requestAuthURLRes.json();
     const authUrl = new URL(url);
     const redirectUri = new URL(
       decodeURIComponent(authUrl.searchParams.get('redirect_uri'))

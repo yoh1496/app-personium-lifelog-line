@@ -1,8 +1,7 @@
-// Login
 // eslint-disable-next-line no-unused-vars
-function init(request) {
+function request_oauth2_url(request) {
   try {
-    personium.validateRequestMethod(['POST'], request);
+    personium.validateRequestMethod(['GET'], request);
     personium.verifyOrigin(request);
 
     var params = personium.parseQuery(request);
@@ -11,17 +10,18 @@ function init(request) {
     personium.setRequiredKeys(['cellUrl']);
     personium.validateKeys(params);
 
+    const { cellUrl } = params;
+
     var state = [moment().valueOf(), '-per'].join('');
     var setCookieStr = createCookie(state);
-    var redirectUrl = getRedirectUrl(params.cellUrl, state);
+    var redirectUrl = getRedirectUrl(cellUrl, state);
 
     return {
-      status: 303,
+      status: 200,
       headers: {
-        Location: redirectUrl,
         'Set-Cookie': setCookieStr,
       },
-      body: [],
+      body: [JSON.stringify({ url: redirectUrl })],
     };
   } catch (e) {
     return personium.createErrorResponse(e);
@@ -31,16 +31,20 @@ function init(request) {
 function createCookie(state) {
   var shaObj = new jsSHA(state, 'ASCII');
   var hash = shaObj.getHash('SHA-512', 'HEX');
-  var cookieStr = ['personium', '=', hash, '; Secure', '; SameSite=None'].join(
-    ''
-  );
+  var cookieStr = [
+    'personium=',
+    hash,
+    // '; Path=/',
+    '; Secure',
+    '; SameSite=None',
+  ].join('');
 
   return cookieStr;
 }
 
 function getRedirectUrl(cellUrl, state) {
   var appCellUrl = personium.getAppCellUrl();
-  var redirectUri = appCellUrl + '__/auth/receive_redirect?cellUrl=' + cellUrl;
+  var redirectUri = appCellUrl + '__/front/app?cellUrl=' + cellUrl;
   var paramsStr = [
     'response_type=code',
     'client_id=' + encodeURIComponent(appCellUrl),

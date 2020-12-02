@@ -1,6 +1,6 @@
 /*global _p*/
 // eslint-disable-next-line no-unused-vars
-function init(request) {
+function get_cellurl(request) {
   try {
     personium.validateRequestMethod(['GET'], request);
     personium.verifyOrigin(request);
@@ -12,7 +12,7 @@ function init(request) {
     personium.validateKeys(params);
 
     const lineAccessToken = params.lineAccessToken;
-    verifyLineAccessToken(lineAccessToken, ChannelId);
+    verifyLineAccessToken(lineAccessToken, LINE_CHANNEL_ID);
 
     const result = getLineProfile(lineAccessToken);
     if (result.status !== '200') {
@@ -39,16 +39,10 @@ function init(request) {
       };
     }
 
-    var state = [moment().valueOf(), '-per'].join('');
-    var setCookieStr = createCookie(state);
-    var redirectUrl = getRedirectUrl(userData.targetCell, state);
-
     return {
       status: 200,
-      headers: {
-        'Set-Cookie': setCookieStr,
-      },
-      body: [JSON.stringify({ url: redirectUrl, result: userData })],
+      headers: { 'Content-Type': 'application/json' },
+      body: [JSON.stringify({ cellUrl: userData.targetCell })],
     };
   } catch (e) {
     return personium.createErrorResponse(e);
@@ -92,29 +86,6 @@ function getEntry(table, __id) {
   return table.retrieve(__id);
 }
 
-function createCookie(state) {
-  var shaObj = new jsSHA(state, 'ASCII');
-  var hash = shaObj.getHash('SHA-512', 'HEX');
-  var cookieStr = ['personium', '=', hash].join('');
-
-  return cookieStr;
-}
-
-function getRedirectUrl(cellUrl, state) {
-  var appCellUrl = personium.getAppCellUrl();
-  var redirectUri = appCellUrl + '__/front/app?cellUrl=' + cellUrl;
-  var paramsStr = [
-    'response_type=code',
-    'client_id=' + encodeURIComponent(appCellUrl),
-    'redirect_uri=' + encodeURIComponent(redirectUri),
-    'state=' + encodeURIComponent(state),
-  ].join('&');
-
-  return [cellUrl, '__authz?', paramsStr].join('');
-}
-
 var httpClient = new _p.extension.HttpClient();
 var personium = require('personium').personium;
-var jsSHA = require('sha_dev2').jsSHA;
-var moment = require('moment').moment;
-const { ChannelId } = require('line_secret').lineSecret;
+const { LINE_CHANNEL_ID } = require('line_secret').lineSecret;

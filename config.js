@@ -52,7 +52,7 @@ module.exports = {
           subject: 'botUser',
           endPoints: {
             events: 'events.js',
-            request_oauth2_url: 'request_oauth2_url.js',
+            get_cellurl: 'get_cellurl.js',
             register_line_association: 'register_line_association.js',
           },
         },
@@ -67,6 +67,7 @@ module.exports = {
           subject: 'me',
           endPoints: {
             start_oauth2: 'start_oauth2.js',
+            request_oauth2_url: 'request_oauth2_url.js',
             receive_redirect: 'receive_redirect.js',
             get_client_secret: 'get_client_secret.js',
           },

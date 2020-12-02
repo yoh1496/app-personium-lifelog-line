@@ -11,7 +11,7 @@ function useCloseWindow() {
     } else {
       window.close();
     }
-  }, [liff]);
+  }, []);
 }
 
 function CellInput({ onEnter }) {
@@ -67,6 +67,10 @@ export function AfterLogin() {
     console.log(cellUrl);
   });
 
+  const handleClick = useCallback(() => {
+    location.href = associationStatus.authUrl;
+  }, [associationStatus]);
+
   if (loading) return <h1>Loading Associate Status...</h1>;
 
   if (error !== null)
@@ -104,6 +108,7 @@ export function AfterLogin() {
       <h1>Already accociated.</h1>
       <div>アプリを起動する</div>
       <a href={authUrl}>起動</a>
+      <button onClick={handleClick}>起動</button>
     </>
   );
 }
