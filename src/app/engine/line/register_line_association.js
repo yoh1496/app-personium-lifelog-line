@@ -20,7 +20,7 @@ function init(request) {
       cellUrl,
       'https://app-ishiguro-01.appdev.personium.io/'
     );
-    verifyLineAccessToken(lineAccessToken, ChannelId);
+    verifyLineAccessToken(lineAccessToken, LINE_CHANNEL_ID);
 
     const profile = getLineProfile(lineAccessToken);
     const userId = profile.userId;
@@ -157,5 +157,5 @@ function getEntry(table, __id) {
 
 var httpClient = new _p.extension.HttpClient();
 var personium = require('personium').personium;
-const { ChannelId } = require('line_secret').lineSecret;
+const { LINE_CHANNEL_ID } = require('line_secret').lineSecret;
 var console = require('console').console;
