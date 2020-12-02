@@ -1,205 +1,69 @@
-import React, { Component, useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 
-import { Menu, Segment, Loader, Container } from 'semantic-ui-react';
-import { Route, Link } from 'react-router-dom';
-import { ImageListPage } from './ImageListPage';
-// import { LineRegistration } from './LineRegistration';
+import { usePersoniumAuthentication } from './lib/Personium/Context/PersoniumAuthentication';
+import { usePersoniumConfig } from './lib/Personium/Context/PersoniumConfig';
+import { AppAuthentication } from './AppAuthentication';
+import { PersoniumBoxProvider } from './lib/Personium/Context/PersoniumBox';
+import { Main } from './Main';
 
-function HeadMenu({ onMenuClick, activeItem }) {
-  return (
-    <Menu pointing fixed="top" inverted>
-      <Container>
-        <Menu.Item
-          as={Link}
-          to="/"
-          name="Locations"
-          active={activeItem === 'Locations'}
-          onClick={onMenuClick}
-        />
-        <Menu.Item
-          as={Link}
-          to="/photos"
-          name="Photos"
-          active={activeItem === 'Photos'}
-          onClick={onMenuClick}
-        />
-        <Menu.Item
-          as={Link}
-          to="/info"
-          name="Cell"
-          active={activeItem === 'Cell'}
-          onClick={onMenuClick}
-        />
-        <Menu.Item
-          as={Link}
-          to="/line"
-          name="LINE"
-          active={activeItem === 'LINE'}
-          onClick={onMenuClick}
-        />
-      </Container>
-    </Menu>
+export const App = ({ bootArgs }) => {
+  const { config, setConfig } = usePersoniumConfig();
+  const { auth } = usePersoniumAuthentication();
+
+  const [inputCell, setInputCell] = useState('');
+
+  const handleSubmit = useCallback(
+    ev => {
+      ev.preventDefault();
+      setConfig.setTargetCellUrl(inputCell);
+    },
+    [setConfig, inputCell]
   );
-}
 
-HeadMenu.propTypes = {
-  onMenuClick: PropTypes.func.isRequired,
-  activeItem: PropTypes.string.isRequired,
-};
+  const handleChange = useCallback(
+    ev => {
+      setInputCell(ev.target.value);
+    },
+    [setInputCell]
+  );
 
-const App = ({ appCell, userCell, authCode }) => {
-  const [loading, setLoading] = useState(true);
-  const [userAccessToken, setUserAccessToken] = useState(null);
-  const [userBoxUrl, setUserBoxURl] = useState(null);
-  const [images, setImages] = useState([]);
-  const [activeItem, setActiveItem] = useState('Home');
-  const [pCookiePeer, setPCookiePeer] = useState(null);
+  console.log('config:', config);
 
-  useEffect(() => {
-    // login action
-    (async () => {
-      let tokens = null;
-      if (authCode === null) {
-        // get AppAuthToken
-        const res = await fetch(`/__/auth/start_oauth2?cellUrl=${userCell}`, {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        });
-        tokens = await res.json();
-      } else {
-        // get AppAuthToken from receive_redirect
-        const { state, code } = authCode;
-        const res = await fetch(
-          `${appCell}__/auth/receive_redirect?state=${state}&code=${code}&cellUrl=${userCell}`,
-          {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-          }
-        );
-        tokens = await res.json();
-      }
+  if (config.appCellUrl === undefined || config.appCellUrl === null) {
+    console.log('config is illegal state', config);
+    return null;
+  }
 
-      if (tokens === null) throw 'not Authorized';
-
-      const client_secret_res = await fetch(`/__/auth/get_client_secret`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams([
-          ['p_target', userCell],
-          ['access_token', tokens.access_token],
-        ]).toString(),
-      });
-
-      const jsonDat = await client_secret_res.json();
-
-      // get token with cookie
-      const data = new URLSearchParams();
-      // data.set('p_target', userCell);
-      data.set('grant_type', 'refresh_token');
-      data.set('p_cookie', 'true');
-      data.set('refresh_token', tokens.refresh_token);
-      data.set('client_id', appCell);
-      data.set('client_secret', jsonDat.access_token);
-
-      const userResult = await fetch(`${userCell}__token`, {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: data,
-      });
-
-      const userResultJson = await userResult.json();
-      console.log(userResultJson);
-
-      const appUserToken = userResultJson.access_token;
-
-      const boxResult = await fetch(`${userCell}__box?schema=${appCell}`, {
-        credentials: 'include',
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${appUserToken}`,
-        },
-      });
-      const userBoxUrl = boxResult.headers.get('Location');
-
-      const imagesResult = await fetch(
-        `${userBoxUrl}receivedData/receivedMessage`,
-        {
-          headers: {
-            Accept: 'application/json',
-            Authorization: `Bearer ${appUserToken}`,
-          },
-        }
-      );
-      const imagesResultJson = await imagesResult.json();
-
-      setLoading(false);
-      setUserAccessToken(appUserToken);
-      setUserBoxURl(userBoxUrl);
-      setPCookiePeer(userResultJson.p_cookie_peer);
-      setImages(
-        Object.values(imagesResultJson.d.results).map(item => item.__id)
-      );
-    })();
-  }, [appCell, userCell, authCode]);
-
-  const handleMenuClick = useCallback(ev => {
-    console.log(ev);
-  }, []);
-
-  if (loading)
+  if (config.targetCellUrl === null) {
+    // ask cell url
     return (
-      <Segment>
-        <Loader />
-      </Segment>
+      <div>
+        <form onSubmit={handleSubmit}>
+          <input type="text" onChange={handleChange} value={inputCell} />
+          <button type="submit">Enter</button>
+        </form>
+      </div>
     );
+  }
 
+  if (auth === null) {
+    return <AppAuthentication authCode={bootArgs.authCode} />;
+  }
+
+  // initialization is done
   return (
-    <>
-      <HeadMenu onMenuClick={handleMenuClick} activeItem={activeItem} />
-      <Container style={{ marginTop: '7em' }}>
-        <Route
-          path="/"
-          exact
-          component={() => (
-            <ImageListPage
-              images={images}
-              p_cookie_peer={pCookiePeer}
-              userBoxUrl={userBoxUrl}
-            />
-          )}
-        />
-        <Route path="/info" exact>
-          <h1>App</h1>
-          <dl>
-            <dt>cell</dt>
-            <dd>{userCell}</dd>
-            <dt>token</dt>
-            <dd>{userAccessToken ? userAccessToken : ''}</dd>
-          </dl>
-        </Route>
-        <Route path="/line" exact>
-          {/* <LineRegistration /> */}
-        </Route>
-      </Container>
-    </>
+    <PersoniumBoxProvider>
+      <Main />
+    </PersoniumBoxProvider>
   );
 };
 
 App.propTypes = {
-  userCell: PropTypes.string.isRequired,
-  appCell: PropTypes.string.isRequired,
-  authCode: PropTypes.shape({
-    state: PropTypes.string.isRequired,
-    code: PropTypes.string.isRequired,
+  bootArgs: PropTypes.shape({
+    authCode: PropTypes.shape({
+      code: PropTypes.string.isRequired,
+      state: PropTypes.string.isRequired,
+    }),
   }).isRequired,
 };
-
-export { App };

@@ -31,8 +31,8 @@ export function usePersoniumConfig() {
   };
 }
 
-export function PersoniumConfigProvider({ children }) {
-  const [config, setConfig] = useState(defaultConfig);
+export function PersoniumConfigProvider({ children, defConfig }) {
+  const [config, setConfig] = useState(defConfig);
   return (
     <PersoniumConfigContext.Provider value={[config, setConfig]}>
       {children}
@@ -41,12 +41,9 @@ export function PersoniumConfigProvider({ children }) {
 }
 
 PersoniumConfigProvider.propTypes = {
-  config: PropTypes.objectOf(
-    PropTypes.shape({
-      appCellUrl: PropTypes.string,
-      targetCellUrl: PropTypes.string,
-    })
-  ),
-  setConfig: PropTypes.func.isRequired,
+  defConfig: PropTypes.shape({
+    appCellUrl: PropTypes.string,
+    targetCellUrl: PropTypes.string,
+  }).isRequired,
   children: PropTypes.node.isRequired,
 };

@@ -1,26 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 
-const { Segment, ImageGroup, Image } = require('semantic-ui-react');
+const { Segment, ImageGroup, Image, Card } = require('semantic-ui-react');
 
 const ImageListPage = props => {
   const { images, p_cookie_peer, userBoxUrl } = props;
   return (
     <Segment>
-      <ImageGroup>
+      <Card.Group>
         {(() => {
-          return images.map(image_id => {
-            const imgUrl = `${userBoxUrl}data/binary/${image_id}?p_cookie_peer=${p_cookie_peer}`;
-            return <Image size="small" src={imgUrl} key={image_id}></Image>;
+          return images.map(item => {
+            const { id, datatype } = item;
+            console.log(item);
+            if (datatype === 'image') {
+              const imgUrl = `${userBoxUrl}data/binary/${id}?p_cookie_peer=${p_cookie_peer}`;
+              return <ImageCard src={imgUrl} key={id} />;
+            } else {
+              const textUrl = `${userBoxUrl}data/binary/${id}?p_cookie_peer=${p_cookie_peer}`;
+              return <TextCard src={textUrl} key={id} />;
+            }
           });
         })()}
-      </ImageGroup>
+      </Card.Group>
     </Segment>
   );
 };
 
 ImageListPage.propTypes = {
-  images: PropTypes.arrayOf(PropTypes.objectOf()),
+  images: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      datatype: PropTypes.string.isRequired,
+    })
+  ).isRequired,
   p_cookie_peer: PropTypes.string,
   userBoxUrl: PropTypes.string,
 };

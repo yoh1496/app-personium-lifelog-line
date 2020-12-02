@@ -6,11 +6,14 @@ import 'semantic-ui-css/semantic.min.css';
 
 // import LoginActionCreators from './actions/loginActionCreators';
 import { App } from './App';
+import { PersoniumAuthProvider } from './lib/Personium/Context/PersoniumAuthentication';
+import { PersoniumConfigProvider } from './lib/Personium/Context/PersoniumConfig';
 
 // BootScript
 const SS_LAST_LOGIN_CELL = 'lastLoginCell';
-const appUrlSplit = `${location.origin}${location.pathname}`.split('/');
-const appCellUrl = `${appUrlSplit.slice(0, 3).join('/')}/`;
+// const appUrlSplit = `${location.origin}${location.pathname}`.split('/');
+// const appCellUrl = `${appUrlSplit.slice(0, 3).join('/')}/`;
+const appCellUrl = 'https://app-ishiguro-01.appdev.personium.io/';
 
 const currentHash = location.hash.replace(/^#\/?/g, '#');
 console.log({ currentHash });
@@ -35,7 +38,8 @@ if (currentHash.startsWith('#cell')) {
   }
 } else {
   nextPath = currentHash;
-  const lastLoginCell = sessionStorage.getItem(SS_LAST_LOGIN_CELL);
+  const lastLoginCell = localStorage.getItem(SS_LAST_LOGIN_CELL);
+  localStorage.removeItem(SS_LAST_LOGIN_CELL);
   targetCell = lastLoginCell ? lastLoginCell : null;
 }
 
@@ -63,21 +67,20 @@ window.history.replaceState(
   '?' + queryParams.toString() + nextPath
 );
 
-if (targetCell) {
-  // LoginActionCreators.login(appCellUrl, targetCell).then(loginInfo => {
-  //   console.log('initialize done: ', JSON.stringify(loginInfo));
-  //   sessionStorage.setItem(SS_LAST_LOGIN_CELL, targetCell);
-  //   location.hash = nextPath;
-  // });
-  ReactDOM.render(
-    <Router>
-      <App appCell={appCellUrl} userCell={targetCell} authCode={authCode} />
-    </Router>,
-    document.getElementById('root')
-  );
-} else {
-  ReactDOM.render(
-    <h1>Not Implemented yet</h1>,
-    document.getElementById('root')
-  );
-}
+const bootArgs = { authCode };
+
+ReactDOM.render(
+  <Router>
+    <PersoniumConfigProvider
+      defConfig={{
+        appCellUrl,
+        targetCellUrl: targetCell,
+      }}
+    >
+      <PersoniumAuthProvider>
+        <App bootArgs={bootArgs} />
+      </PersoniumAuthProvider>
+    </PersoniumConfigProvider>
+  </Router>,
+  document.getElementById('root')
+);

@@ -18,9 +18,18 @@ module.exports = {
           'style-loader',
           {
             loader: 'css-loader',
-            options: { url: false },
+            options: { url: true }, // for semantic-ui icons.
           },
         ],
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|svg|png)$/,
+        use: {
+          loader: 'file-loader',
+          options: {
+            publicPath: '/__/public',
+          },
+        },
       },
       {
         test: /\.(js|jsx)$/,
@@ -45,5 +54,11 @@ module.exports = {
     historyApiFallback: {
       rewrites: [{ from: '/', to: '/dev_index.html' }],
     },
+    host: '0.0.0.0',
+    disableHostCheck: true,
+    watchOptions: {
+      ignored: /node_modules/,
+    },
+    https: true,
   },
 };
