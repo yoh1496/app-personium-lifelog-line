@@ -65,18 +65,23 @@ async function deployCollection(
   }
 
   const contents = await getContents(srcFolder);
-  return Promise.all(
-    contents.map(content => {
-      const { stat } = content;
-      if (deploySubdirectory && stat.isDirectory()) {
-        const dstPath = path.join(dstName, content.filename);
-        return deployCollection(client, content.filepath, dstPath);
-      } else {
-        const dstPath = path.join(collectionPath, content.filename);
-        console.log(`file upload: ${content.filepath} -> ${dstPath}`);
-        return client.putFile(dstPath, content.filepath);
-      }
-    })
+
+  const deployContent = content => {
+    const { stat } = content;
+    if (deploySubdirectory && stat.isDirectory()) {
+      const dstPath = path.join(dstName, content.filename);
+      return deployCollection(client, content.filepath, dstPath);
+    } else {
+      const dstPath = path.join(collectionPath, content.filename);
+      console.log(`file upload: ${content.filepath} -> ${dstPath}`);
+      return client.putFile(dstPath, content.filepath).catch(err => {
+        console.log(`file upload failed: ${content.filepath}`, err);
+      });
+    }
+  };
+  return await contents.reduce(
+    (m, p) => m.then(() => deployContent(p)),
+    Promise.resolve()
   );
 }
 
@@ -102,15 +107,17 @@ async function deployEngine(client, engineFolderPath, engineName, engineMeta) {
 
   // upload engine scripts
   const files = await getFiles(engineSrcFolderPath);
-  const results = await Promise.all(
-    files.map(fileInfo => {
-      console.log(`engine upload: ${fileInfo.filepath}`);
-      return client.putFileToEngine(
-        enginePath,
-        fileInfo.filepath,
-        fileInfo.filename
-      );
-    })
+  const deployFile = fileInfo => {
+    console.log(`engine upload: ${fileInfo.filepath}`);
+    return client
+      .putFileToEngine(enginePath, fileInfo.filepath, fileInfo.filename)
+      .catch(err => {
+        console.log(`engine upload failed: ${fileInfo.filepath}`, err);
+      });
+  };
+  const results = await files.reduce(
+    (m, p) => m.then(() => deployFile(p)),
+    Promise.resolve()
   );
 
   // setting props
@@ -121,6 +128,38 @@ async function deployEngine(client, engineFolderPath, engineName, engineMeta) {
     throw e;
   }
   return results;
+}
+
+async function deployStatic(client, staticDir) {
+  // upload single file
+  const { getFiles } = require('./tools/directories');
+
+  const contents = await getFiles(path.join('build', staticDir));
+
+  console.log(JSON.stringify(contents, '', 2));
+
+  const deployFile = content => {
+    const collectionPath = path.join('/__/', staticDir);
+    const dstPath = path.join(collectionPath, content.filename);
+    console.log(`static file upload: ${content.filepath} -> ${dstPath}`);
+    return client
+      .putFile(dstPath, content.filepath)
+      .then(() => {
+        console.log(`static file upload done: ${content.filepath}`);
+      })
+      .catch(err => {
+        console.log(`static file upload failed: ${content.filepath}`, err);
+        console.log({
+          status: err.response.status,
+          statusText: err.response.data.message,
+        });
+      });
+  };
+
+  return contents.reduce(
+    (m, p) => m.then(() => deployFile(p)),
+    Promise.resolve()
+  );
 }
 
 gulp.task('deploy', () => {
@@ -146,18 +185,7 @@ gulp.task('deploy', () => {
             mapping.meta
           );
         } else if (mapping.resourceType === CONSTANT.RESOURCETYPE.STATICFILE) {
-          const { getFiles } = require('./tools/directories');
-
-          return getFiles(path.join('build', mapping.dstDir)).then(contents =>
-            Promise.all(
-              contents.map(content => {
-                const collectionPath = path.join('/__/', mapping.dstDir);
-                const dstPath = path.join(collectionPath, content.filename);
-                console.log(`file upload: ${content.filepath} -> ${dstPath}`);
-                return client.putFile(dstPath, content.filepath);
-              })
-            )
-          );
+          return deployStatic(client, mapping.dstDir);
         } else {
           return deployCollection(
             client,
