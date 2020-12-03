@@ -1,79 +1,121 @@
-import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ImageCard, TextCard } from './TimelineItems';
 import { usePersoniumAuthentication } from './lib/Personium/Context/PersoniumAuthentication';
 import { useBoxUrl } from './lib/Personium/Context/PersoniumBox';
 import { TimelineFilter } from './TimelineFilter';
 import { useParams } from 'react-router-dom';
+import { o } from 'odata';
+import { addDays } from 'date-fns';
 
-const { Segment, Card } = require('semantic-ui-react');
+import {
+  Segment,
+  Card,
+  Container,
+  Header,
+  Sticky,
+  Dimmer,
+} from 'semantic-ui-react';
 
-export const Timeline = props => {
+const useTimelineContent = (year, month, day, access_token, boxUrl) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { auth } = usePersoniumAuthentication();
-  const { boxUrl } = useBoxUrl();
-  const { year, month, day } = useParams();
+
+  // const oHandler = useMemo(() => {
+  //   return o(`${boxUrl}`, {
+  //     headers: {
+  //       Authorization: `Bearer ${access_token}`,
+  //       'Content-Type': 'application/json',
+  //     },
+  //   });
+  // }, [boxUrl, access_token]);
 
   useEffect(() => {
-    // download lists
-    const { access_token } = auth;
+    setLoading(true);
 
-    fetch(`${boxUrl}receivedData/receivedMessage`, {
+    const date = new Date(year, month - 1, day);
+    const from = date.getTime();
+    const to = addDays(date, 1).getTime() - 1;
+
+    const oHandler = o(`${boxUrl}`, {
       headers: {
-        Accept: 'application/json',
         Authorization: `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
       },
-    })
-      .then(res => {
-        if (!res.ok)
-          return res.text().then(statusText => {
-            throw { status: res.status, statusText };
-          });
-        return res.json();
+    });
+    oHandler
+      .get('receivedData/receivedMessage')
+      .query({
+        $filter: `__published ge ${from} and __published lt ${to}`,
+        $format: 'json',
       })
-      .then(jsonDat => {
+      .then(res => {
+        console.log(res);
+        return res;
+      })
+      .then(res => {
         setItems(
-          Object.values(jsonDat.d.results).map(item => ({
+          Object.values(res.d.results).map(item => ({
             id: item.__id,
             datatype: item.datatype,
           }))
         );
         setLoading(false);
+      })
+      .catch(res => {
+        console.log('error happened: ', res);
+        setError(res);
+        setLoading(false);
       });
-  }, [auth, boxUrl]);
+  }, [year, month, day, boxUrl, access_token]);
+
+  return { loading, error, items };
+};
+
+export const Timeline = () => {
+  const { auth } = usePersoniumAuthentication();
+  const { boxUrl } = useBoxUrl();
+  const { year, month, day } = useParams();
+  const { loading, error, items } = useTimelineContent(
+    year,
+    month,
+    day,
+    auth.access_token,
+    boxUrl
+  );
+
+  useEffect(() => {
+    document.title = `${year}年${month}月${day}日のタイムライン`;
+  }, [year, month, day]);
+
+  if (error) return <div>{JSON.stringify(error)}</div>;
 
   return (
     <>
-      <TimelineFilter year={year} month={month} day={day} />
-      <Segment>
-        <Card.Group>
-          {(() => {
-            return items.map(item => {
-              const { id, datatype } = item;
-              console.log(item);
-              if (datatype === 'image') {
-                const imgUrl = `${boxUrl}data/binary/${id}?p_cookie_peer=${auth.p_cookie_peer}`;
-                return <ImageCard src={imgUrl} key={id} />;
-              } else {
-                const textUrl = `${boxUrl}data/binary/${id}?p_cookie_peer=${auth.p_cookie_peer}`;
-                return <TextCard src={textUrl} key={id} />;
-              }
-            });
-          })()}
-        </Card.Group>
-      </Segment>
+      <Sticky>
+        <Header block>Timeline</Header>
+      </Sticky>
+
+      <Container style={{ paddingTop: '1em', paddingBottom: '7em' }}>
+        <TimelineFilter year={year} month={month} day={day} />
+        <Dimmer.Dimmable as={Segment} dimmed={loading}>
+          <Card.Group itemsPerRow={1}>
+            {(() => {
+              return items.map(item => {
+                const { id, datatype } = item;
+                console.log(item);
+                if (datatype === 'image') {
+                  const imgUrl = `${boxUrl}data/binary/${id}?p_cookie_peer=${auth.p_cookie_peer}`;
+                  return <ImageCard src={imgUrl} key={id} />;
+                } else {
+                  const textUrl = `${boxUrl}data/binary/${id}?p_cookie_peer=${auth.p_cookie_peer}`;
+                  return <TextCard src={textUrl} key={id} />;
+                }
+              });
+            })()}
+          </Card.Group>
+        </Dimmer.Dimmable>
+      </Container>
     </>
   );
-};
-
-Timeline.propTypes = {
-  images: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      datatype: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  p_cookie_peer: PropTypes.string,
-  userBoxUrl: PropTypes.string,
 };

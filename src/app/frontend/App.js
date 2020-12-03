@@ -39,6 +39,7 @@ export const App = ({ bootArgs }) => {
     // ask cell url
     return (
       <div>
+        <h3>Input Cell URL</h3>
         <form onSubmit={handleSubmit}>
           <input type="text" onChange={handleChange} value={inputCell} />
           <button type="submit">Enter</button>

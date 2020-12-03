@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Segment, Loader, Container } from 'semantic-ui-react';
+import { Segment, Loader } from 'semantic-ui-react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { Timeline } from './Timeline';
 
@@ -9,12 +9,14 @@ import { BoxInstallation } from './BoxInstallation';
 import { useBoxUrl } from './lib/Personium/Context/PersoniumBox';
 import { usePersoniumConfig } from './lib/Personium/Context/PersoniumConfig';
 import { usePersoniumAuthentication } from './lib/Personium/Context/PersoniumAuthentication';
+import { LineRegistration } from './LineRegistration';
+import { AuthInfo } from './AuthInfo';
+import { Top } from './Top';
 
 export function Main() {
-  const { boxUrl } = useBoxUrl();
+  const { loading, boxUrl } = useBoxUrl();
   const { config } = usePersoniumConfig();
   const { auth } = usePersoniumAuthentication();
-  const [loading, setLoading] = useState(false);
   const [activeItem, setActiveItem] = useState('Home');
 
   const handleMenuClick = useCallback(ev => {
@@ -36,10 +38,6 @@ export function Main() {
     return loc;
   }, [month, year, day]);
 
-  if (boxUrl === null) {
-    return <BoxInstallation />;
-  }
-
   if (loading)
     return (
       <Segment>
@@ -47,36 +45,26 @@ export function Main() {
       </Segment>
     );
 
+  if (boxUrl === null) {
+    return <BoxInstallation />;
+  }
+
   return (
     <>
       <HeadMenu onMenuClick={handleMenuClick} activeItem={activeItem} />
-      <Container style={{ marginTop: '7em' }}>
-        <Switch>
-          <Redirect exact from="/timeline" to={todayLocation} />
-          <Route path="/timeline/:year(\d+)-:month(\d+)-:day(\d+)">
-            <Timeline />
-          </Route>
-          {/* component={() => (
-            <ImageListPage
-              images={images}
-              p_cookie_peer={pCookiePeer}
-              userBoxUrl={userBoxUrl}
-            />
-          )} */}
-          <Route path="/info" exact>
-            <h1>App</h1>
-            <dl>
-              <dt>cell</dt>
-              <dd>{config.targetCellUrl}</dd>
-              <dt>token</dt>
-              <dd>{auth.access_token ? auth.access_token : ''}</dd>
-            </dl>
-          </Route>
-          <Route path="/line" exact>
-            {/* <LineRegistration /> */}
-          </Route>
-        </Switch>
-      </Container>
+      <Switch>
+        <Redirect exact from="/" to={todayLocation} />
+        <Redirect exact from="/timeline" to={todayLocation} />
+        <Route path="/timeline/:year(\d+)-:month(\d+)-:day(\d+)">
+          <Timeline />
+        </Route>
+        <Route path="/info" exact>
+          <AuthInfo />
+        </Route>
+        <Route path="/line" exact>
+          <LineRegistration />
+        </Route>
+      </Switch>
     </>
   );
 }

@@ -107,7 +107,6 @@ export function AfterLogin() {
     <>
       <h1>Already accociated.</h1>
       <div>アプリを起動する</div>
-      <a href={authUrl}>起動</a>
       <button onClick={handleClick}>起動</button>
     </>
   );

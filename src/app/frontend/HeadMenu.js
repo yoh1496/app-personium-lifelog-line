@@ -6,20 +6,20 @@ import { Link } from 'react-router-dom';
 
 export function HeadMenu({ onMenuClick, activeItem }) {
   return (
-    <Menu pointing fixed="top" inverted>
+    <Menu pointing fixed="bottom" inverted>
       <Container>
+        <Menu.Item
+          as={Link}
+          to="/"
+          name="Top"
+          active={activeItem === 'Top'}
+          onClick={onMenuClick}
+        />
         <Menu.Item
           as={Link}
           to="/timeline"
           name="Timeline"
           active={activeItem === 'Timeline'}
-          onClick={onMenuClick}
-        />
-        <Menu.Item
-          as={Link}
-          to="/photos"
-          name="Photos"
-          active={activeItem === 'Photos'}
           onClick={onMenuClick}
         />
         <Menu.Item
