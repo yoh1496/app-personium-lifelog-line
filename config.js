@@ -87,7 +87,7 @@ module.exports = {
         filePattern: ['src/assets/**/*', '!src/assets/**/*.example.*'],
         srcDir: 'src/assets',
         dstDir: '',
-        resourceType: 'staticFile',
+        resourceType: 'staticfile',
       },
     ],
   },
