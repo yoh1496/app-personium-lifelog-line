@@ -34,6 +34,34 @@ export function useLINECellAssociationStatus(lineAccessToken, appCellUrl) {
     [lineAccessToken, appCellUrl]
   );
 
+  const disassociateCell = useCallback(
+    async (targetCell, accessToken) => {
+      try {
+        const disassociateURL = new URL(
+          `${appCellUrl}__/line/register_line_association`
+        );
+        disassociateURL.searchParams.set('cellUrl', targetCell);
+
+        const res = await fetch(disassociateURL.toString(), {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (res.ok) {
+          return true;
+        } else {
+          throw { status: res.status, statusText: await res.text() };
+        }
+      } catch (e) {
+        setError(e);
+        throw e;
+      }
+    },
+    [appCellUrl]
+  );
+
   const updateAssociationStatus = useCallback(async () => {
     setLoading(true);
 
@@ -86,6 +114,7 @@ export function useLINECellAssociationStatus(lineAccessToken, appCellUrl) {
     error,
     associationStatus,
     associateCell,
+    disassociateCell,
     updateAssociationStatus,
   };
 }
