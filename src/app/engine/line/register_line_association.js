@@ -2,8 +2,11 @@
 // eslint-disable-next-line no-unused-vars
 function init(request) {
   try {
-    personium.validateRequestMethod(['POST'], request);
+    personium.validateRequestMethod(['POST', 'DELETE'], request);
     personium.verifyOrigin(request);
+
+    console.log(request.method);
+    if (request.method === 'DELETE') return disassociate(request);
 
     var params = personium.parseBodyAsQuery(request);
     // verify parameter information
@@ -11,9 +14,7 @@ function init(request) {
     personium.setRequiredKeys(['lineAccessToken', 'cellUrl', 'accessToken']);
     personium.validateKeys(params);
 
-    const lineAccessToken = params.lineAccessToken;
-    const accessToken = params.accessToken;
-    const cellUrl = params.cellUrl;
+    const { lineAccessToken, cellUrl, accessToken } = params;
 
     verifyAccessToken(
       accessToken,
@@ -27,22 +28,17 @@ function init(request) {
 
     const userDataTable = getTable('Accounts');
 
+    const userData = getEntry(userDataTable, userId);
+
+    // associate
+    if (userData !== null) {
+      throw new _p.PersoniumException('already associated');
+    }
     updateTableEntry(userDataTable, {
       __id: userId,
       targetCell: cellUrl,
       status: 'active',
     });
-
-    // deleteEntry(userDataTable, userData.__id);
-
-    // const userData = getEntry(userDataTable, userId);
-    // if (!userData || userData.status !== 'active') {
-    //   return {
-    //     status: 404,
-    //     headers: { 'Content-Type': 'text/plain' },
-    //     body: ['valid userData not found.'],
-    //   };
-    // }
 
     return {
       status: 200,
@@ -53,6 +49,64 @@ function init(request) {
     return personium.createErrorResponse(e);
   }
 }
+
+function disassociate(request) {
+  // disassociate
+  console.log(JSON.stringify(request));
+  if (
+    request.headers['authorization'] === undefined ||
+    request.headers['authorization'] === null
+  ) {
+    throw new _p.PersoniumException('Authorization header is none');
+  }
+  const access_token = request.headers['authorization'].replace('Bearer ', '');
+  const client_id = 'https://app-ishiguro-01.appdev.personium.io/';
+  console.log(access_token);
+
+  const queries = personium.parseQuery(request);
+  const { cellUrl } = queries;
+
+  if (cellUrl === null || cellUrl === undefined) {
+    throw new _p.PersoniumException('cellUrl is not contained in query');
+  }
+
+  verifyAccessToken(access_token, cellUrl, client_id);
+
+  const userDataTable = getTable('Accounts');
+  const userData = findAccount(userDataTable, cellUrl).d.results[0];
+
+  if (userData === null || userData === undefined) {
+    throw new _p.PersoniumException('not associated yet');
+  }
+  console.log(JSON.stringify(userData));
+  deleteEntry(userDataTable, userData.__id);
+
+  return {
+    status: 200,
+    headers: {},
+    body: [JSON.stringify({ url: cellUrl })],
+  };
+}
+
+// /* not work */
+// function getCellUrlFromAccessToken(accessToken, client_id) {
+//   const appToken = _p
+//     .as('serviceSubject')
+//     .cell(client_id)
+//     .getToken();
+//   const result = httpClient.post(
+//     client_id + '__introspect',
+//     {
+//       Authorization: 'Bearer ' + appToken.acceses_token,
+//     },
+//     'application/x-www-form-urlencoded',
+//     'token=' + appToken.acceses_token
+//   );
+//   console.log(JSON.stringify(result));
+//   console.log(result.body);
+//   const parsedBody = JSON.parse(result.body);
+//   return parsedBody;
+// }
 
 function verifyLineAccessToken(lineAccessToken, client_id) {
   const result = httpClient.get(
@@ -152,7 +206,32 @@ var updateTableEntry = function(table, data) {
 };
 
 function getEntry(table, __id) {
-  return table.retrieve(__id);
+  try {
+    return table.retrieve(__id);
+  } catch (e) {
+    console.log(JSON.stringify(e));
+    if (e.code === 404) {
+      return null;
+    } else {
+      throw e;
+    }
+  }
+}
+
+function findAccount(entitySet, targetCell) {
+  try {
+    return entitySet
+      .query()
+      .filter("targetCell eq '" + targetCell + "'")
+      .run();
+  } catch (e) {
+    console.log(JSON.stringify(e));
+    if (e.code === 404) {
+      return null;
+    } else {
+      throw e;
+    }
+  }
 }
 
 var httpClient = new _p.extension.HttpClient();
