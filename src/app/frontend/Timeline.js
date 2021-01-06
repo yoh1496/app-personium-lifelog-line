@@ -48,6 +48,7 @@ const useTimelineContent = (year, month, day, access_token, boxUrl) => {
       .query({
         $filter: `__published ge ${from} and __published lt ${to}`,
         $format: 'json',
+        $orderby: '__published asc',
       })
       .then(res => {
         console.log(res);
