@@ -50,9 +50,9 @@ Before sending data, you must assign `LineEventWriter` role to `https://app-ishi
 
 1. First, open `LINE` tab.  
 ![open_LINE_tab](./docs/how_to_install/04_open_LINE_tab.png)
-2. To register `https://app-ishiguro-01.appdev.personium.io/` as external cell onto your cell, click `登録する` button.
+2. To register `https://app-ishiguro-01.appdev.personium.io/` as external cell onto your cell, click `登録する` button.  
 ![register_extcell](./docs/how_to_install/05_register_extcell.png)
-3. To assign `LineEventWriter` role to `https://app-ishiguro-01.appdev.personium.io/` ext cell, click `付与する` button.
+3. To assign `LineEventWriter` role to `https://app-ishiguro-01.appdev.personium.io/` ext cell, click `付与する` button.  
 ![assign_role](./docs/how_to_install/06_assign_role.png)
 
 You can see statuses like below after registration and assignment.
