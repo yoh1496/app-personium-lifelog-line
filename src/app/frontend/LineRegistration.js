@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Header, Segment, Label, Sticky, Container } from 'semantic-ui-react';
 import { LineFriendButton } from './LineFriendButton';
+import { ExtCellSetupView } from './ExtCellSetup';
 
 export const LineRegistration = () => {
   return (
@@ -15,10 +16,13 @@ export const LineRegistration = () => {
           <p>
             LINEと連携することで、トークから自分のセルに画像を保存することができます。
             <br />
-            トークからの入力を有効にするには、ライフログアプリ（https://app-ishiguro-01.appdev.personium.io/）へ
+            トークからの入力を有効にするには、ライフログアプリ（https://app-ishiguro-01.appdev.personium.io/）を外部セル登録し、
             <br />
-            「LineEventWriter」 Roleを付与してください。
+            「LineEventWriter」Roleを付与してください。
+            <br />
+            外部セル登録と、Role付与は下記ボタンからも実行できます。
           </p>
+          <ExtCellSetupView />
         </Segment>
       </Container>
       <Container style={{ paddingBottom: '7em' }}>
